@@ -1,7 +1,10 @@
 import torch
 import numpy as np
+
 from JointNetDrift import Joint_Prediction
 import torch.optim as optim
+
+from TrainCentroidMatrixNet import FineTunedNet
 from preprocessing import LoadDriftData
 from config import args
 from torch.utils.data import TensorDataset,DataLoader
@@ -42,6 +45,15 @@ def init_dataset():
                         'to satisfy the chosen classes_per_it. Decrease the ' +
                         'classes_per_it_{tr/val} option and try again.'))
     return train_x,train_y,train_locy,test_x,test_y,test_locy
+
+
+def init_lr_scheduler(optim):
+    '''
+    Initialize the learning rate scheduler
+    '''
+    return torch.optim.lr_scheduler.StepLR(optimizer=optim,
+                                           gamma=args.lr_scheduler_gamma,
+                                           step_size=args.lr_scheduler_step)
 
 
 def init_sampler(labels):
@@ -145,14 +157,100 @@ def main():
     print(' Avg Test Class Acc: {}, Avg Test loc Acc: {}'.format(
         avg_class_acc, avg_loc_acc))
 
+def finetunning():
+    ModelSelect = args.FAN  # 'RNN', 'FAN','CNN', 'FNN','FQN','FAN'
+    train_dataloader, test_dataloader = init_dataloader()
 
-def init_lr_scheduler(optim):
-    '''
-    Initialize the learning rate scheduler
-    '''
-    return torch.optim.lr_scheduler.StepLR(optimizer=optim,
-                                           gamma=args.lr_scheduler_gamma,
-                                           step_size=args.lr_scheduler_step)
+    print('Checking if GPU is available')
+    use_gpu = torch.cuda.is_available()
+    use_gpu = False
+
+    # Set training iterations and display period
+    num_episode = args.finetune_num_episode
+    # load teacher model
+    BASE_PATH = './input/Model/' + args.DATA_FILE
+    teacher_model = Teacher_Joint_Prediction(use_gpu=use_gpu, Data_Vector_Length=args.Data_Vector_Length,
+                                             ModelSelect=ModelSelect)
+    PATH = BASE_PATH + '/' + ModelSelect + '_model_embeding.pkl'
+    teacher_model.load_state_dict(torch.load(PATH))
+    centroid_matrix = torch.load('./input/Model/' + args.DATA_FILE + '/{name}_centroid_matrix.pt'.format(name=ModelSelect))
+    embedding_model = teacher_model.PrototypicalNet
+    # Initializing prototypical net
+
+    print('Initializing Finetunning net')
+    finetuning_model = FineTunedNet(centroid_matrix=centroid_matrix)
+    # sub_model = Sub_Joint_Prediction(Data_Vector_Length=args.Data_Vector_Length)
+
+    optimizer = optim.Adam(finetuning_model.parameters(), lr=args.student_lr)
+    lr_scheduler = init_lr_scheduler(optimizer)
+    loss_fn = torch.nn.CrossEntropyLoss()
+
+    train_loss = []
+    train_class_acc = []
+    # train_loc_acc = []
+    test_loss = []
+    test_class_acc = []
+    # test_loc_acc = []
+    # Training loop
+    for i in range(num_episode):
+        finetuning_model.train()
+        for batch_idx, data in enumerate(train_dataloader):
+            optimizer.zero_grad()
+            datax, datay, locy = data
+            # teacher model predict
+            embedded_x = embedding_model(datax)
+            y_pred = finetuning_model(embedded_x)
+            loss = loss_fn(y_pred, datay)
+
+            pred_labels = torch.argmax(y_pred, dim=1)
+            class_acc = (pred_labels == datay).sum().item()/len(datay)
+            train_class_acc.append(class_acc)
+
+            loss.backward()
+            optimizer.step()
+            train_loss.append(loss.item())
+
+            # train_class_acc.append(type_acc)
+            # train_loc_acc.append(loc_acc.item())
+
+        avg_loss = np.mean(train_loss)
+        avg_class_acc = np.mean(train_class_acc)
+        # avg_loc_acc = np.mean(train_loc_acc)
+        print('{} episode,Avg Train Loss: {},Avg Train Class Acc: {}'.format(
+            i, avg_loss, avg_class_acc))
+
+        lr_scheduler.step()
+
+    PATH = './input/Model/' + args.DATA_FILE + '/{name}_finetune_model_embeding.pkl'.format(name=ModelSelect)
+    torch.save(finetuning_model.state_dict(), PATH)
+    # save loss
+    with open('./input/Model/' + args.DATA_FILE + '/{name}_finetune_loss.json'.format(name=ModelSelect),
+              "w") as f:
+        json.dump({"train_loss": train_loss, "train_class_acc": train_class_acc}, f)
+    # Test loop
+    for batch_idx, data in enumerate(test_dataloader):
+        datax, datay, locy = data
+        # type_pred_T, loc_pred_T, loc_W = teather_model(datax, BASE_PATH)
+        # loss, type_loss, loc_loss, loc_acc, type_acc = sub_model(datax, datay, locy, type_pred_T, loc_pred_T, loc_W)
+        embedded_x = embedding_model(datax)
+        y_pred = finetuning_model(embedded_x)
+        loss = loss_fn(y_pred, datay)
+        test_loss.append(loss.item())
+        pred_labels = torch.argmax(y_pred, dim=1)
+        class_acc = (pred_labels == datay).sum().item() / len(datay)
+        test_class_acc.append(class_acc)
+        # test_class_acc.append(type_acc)
+        # test_loc_acc.append(loc_acc.item())
+
+    avg_class_acc = np.mean(test_class_acc)
+    # avg_loc_acc = np.mean(test_loc_acc)
+    # save result
+    with open('./input/Model/' + args.DATA_FILE + '/{name}_finetune_result.json'.format(name=ModelSelect),
+              "w") as f:
+        json.dump({"avg_class_acc": avg_class_acc}, f)
+
+    print(' Avg Test Class Acc: {}'.format(
+        avg_class_acc))
 
 
 def knowledge_distillation():
@@ -216,7 +314,7 @@ def knowledge_distillation():
                                                                                                       M=args.distillation_point_method)
     torch.save(sub_model.state_dict(), PATH)
     # save loss
-    with open('./input/Model/' + args.DATA_FILE + '/{name}_student_{T}_{M}_model_embeding.pkl'.format(name=ModelSelect,
+    with open('./input/Model/' + args.DATA_FILE + '/{name}_student_{T}_{M}_loss.json'.format(name=ModelSelect,
                                                                                                       T=args.distillation_T,
                                                                                                       M=args.distillation_point_method), "w") as f:
         json.dump({"train_loss": train_loss, "train_class_acc": train_class_acc, "train_loc_acc": train_loc_acc}, f)
@@ -311,8 +409,9 @@ def small_model():
 if __name__ == "__main__":
     #TODO Training teacher network
     main()
+    finetunning()
     # TODO Distill the trained teacher network into the student network
-    knowledge_distillation()
-    # TODO Do not train the student network by distillation
-    small_model()
+    # knowledge_distillation()
+    # # TODO Do not train the student network by distillation
+    # small_model()
 

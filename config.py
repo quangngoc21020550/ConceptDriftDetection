@@ -29,6 +29,7 @@ args.add_argument('--distillation-T', type=int, default=1)
 args.add_argument('--distillation-type-alpha', type=int, default=0.25)
 args.add_argument('--distillation-point-method', type=int, default=1)
 args.add_argument('--student-lr', type=int, default=0.02)
+args.add_argument('--finetune-num-episode', type=int, default=50)
 args.add_argument('--student-num-episode', type=int, default=300)
 args.add_argument('--student-frame-size', type=int, default=200)
 
