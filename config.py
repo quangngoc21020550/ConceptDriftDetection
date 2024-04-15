@@ -6,7 +6,9 @@ args.add_argument('--Data-Vector-Length', type=int, default=50,
                   help='Setting data Dimensions')
 args.add_argument('--centord-Vector-Length', type=int, default=30,
                   help='Setting centord Vector Dimensions')
-args.add_argument('--Train-Ratio', type=float, default=0.8,
+args.add_argument('--Train-Ratio', type=float, default=0.6,
+                  help='Training set ratio')
+args.add_argument('--FineTune-Ratio', type=float, default=0.2,
                   help='Training set ratio')
 args.add_argument('--DATA-FILE', type=str, default='drift-50-15-4800',
                   help='Select data set')
@@ -21,7 +23,7 @@ args.add_argument('--frame-size', type=int, default=200)
 args.add_argument('--train-data', type=str, default="train")
 args.add_argument('--test-data', type=str, default="test")
 
-args.add_argument('--num-episode', type=int, default=600)
+args.add_argument('--num-episode', type=int, default=300)
 args.add_argument('--lr', type=float, default=0.01)
 args.add_argument('--lr-scheduler-gamma', type=float, default=0.9)
 args.add_argument('--lr_scheduler-step', type=int, default=30)
@@ -29,7 +31,7 @@ args.add_argument('--distillation-T', type=int, default=1)
 args.add_argument('--distillation-type-alpha', type=int, default=0.25)
 args.add_argument('--distillation-point-method', type=int, default=1)
 args.add_argument('--student-lr', type=int, default=0.02)
-args.add_argument('--finetune-num-episode', type=int, default=50)
+args.add_argument('--finetune-num-episode', type=int, default=100)
 args.add_argument('--student-num-episode', type=int, default=300)
 args.add_argument('--student-frame-size', type=int, default=200)
 

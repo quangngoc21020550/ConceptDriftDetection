@@ -14,7 +14,7 @@ def preprocessingAbruptDriftData(feature_length, DATA_FILE):
     file_dir='./input/Data/'+ DATA_FILE +'/abrupt'
     all_file_list=os.listdir(file_dir)
     for single_file in all_file_list:
-        print(single_file)
+        # print(single_file)
         single_data_frame = pd.read_csv(os.path.join(file_dir, single_file), sep=',', header=0)
         # print(single_data_frame.iloc[:,[1]])
 
@@ -52,7 +52,7 @@ def preprocessingGradualDriftData(feature_length, DATA_FILE):
     all_file_list = os.listdir(file_dir)
 
     for single_file in all_file_list:
-        print(single_file)
+        # print(single_file)
         single_data_frame = pd.read_csv(os.path.join(file_dir, single_file), sep=',', header=0)
         # print(single_data_frame.iloc[:,[1]])
         drift_location_frame = \
@@ -82,7 +82,7 @@ def preprocessingIncrementalDriftData(feature_length, DATA_FILE):
     all_file_list = os.listdir(file_dir)
 
     for single_file in all_file_list:
-        print(single_file)
+        # print(single_file)
         single_data_frame = pd.read_csv(os.path.join(file_dir, single_file), sep=',', header=0)
         # print(single_data_frame.iloc[:,[1]])
         drift_location_frame = \
@@ -110,7 +110,7 @@ def preprocessingNoDriftData(feature_length, DATA_FILE):
     all_file_list = os.listdir(file_dir)
 
     for single_file in all_file_list:
-        print(single_file)
+        # print(single_file)
         single_data_frame = pd.read_csv(os.path.join(file_dir, single_file), sep=',', header=0)
         # print(single_data_frame.iloc[:,[1]])
         single_data_frame['gap'] = ((single_data_frame.iloc[:, [1]].shift(-1) - single_data_frame.iloc[:, [1]])

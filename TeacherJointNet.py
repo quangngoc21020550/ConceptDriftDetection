@@ -69,8 +69,8 @@ class Teacher_Joint_Prediction(nn.Module):
         input_cpu = input.to('cpu')
         prototypes = torch.load(BASE_PATH +"/"+self.ModelSelect+'_centroid_matrix.pt')
         # FIXME when torch will support where as np
-        dists = euclidean_dist(input_cpu, prototypes)
-        log_p_y = F.log_softmax(-dists/args.distillation_T, dim=1)
+        cosine_similarity = torch.mm(prototypes,torch.t(input_cpu))
+        log_p_y = F.softmax(cosine_similarity/args.distillation_T, dim=0)
         # acc_val = torch.mean((torch.argmax(log_p_y, 1) == target_cpu).float())
         return log_p_y
 

@@ -38,6 +38,14 @@ class Joint_Prediction(nn.Module):
         loss = self.AutomaticWeightedLoss(class_loss, loc_loss)
         return loss,class_acc,loc_acc,centroid_matrix
 
+    def forward_wo_loc(self,datax,datay):
+        #Get input data (center of mass)
+        input = self.PrototypicalNet(datax)
+        class_loss, class_acc ,centroid_matrix=self.prototypical_loss(input,datay,self.Ns)
+
+
+        return class_loss,class_acc,centroid_matrix
+
     def cal_loc_acc(self,pre_loc_y,locy):
         '''
         R**2 :cal loc acc
@@ -338,6 +346,8 @@ def euclidean_dist(x, y):
 
     return torch.pow(x - y, 2).sum(2)
 
+def cosine_similarity(x, y):
+    return torch.mm(x, torch.t(y))
 
 class DriftPointNet1(nn.Module):
     def __init__(self, use_gpu=True,Data_Vector_Length=100):

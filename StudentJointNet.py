@@ -47,7 +47,7 @@ class Sub_Joint_Prediction(nn.Module):
         if L2(Rs − yk) + m > L2(Rt − yk) -> Lb(Rs, Rt, y) = L2(Rt − yk)
         else Lb(Rs, Rt, y) = 0
         '''
-        pre_type = torch.log_softmax(pred_type / args.distillation_T, dim=-1)
+        pre_type = torch.softmax(pred_type / args.distillation_T, dim=1)
         type_loss1 = F.nll_loss(pre_type, datay.long())  # learning student_model(real target)
         # learning teacher_model(soft target)
         type_loss2 = self.KLDivLoss_fun(pre_type, type_pred_T) * args.distillation_T * args.distillation_T
