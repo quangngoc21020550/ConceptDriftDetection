@@ -1,10 +1,7 @@
-import time
-
 import torch
 import numpy as np
 
 from EmbeddingNet import EmbeddingNet, cosine_similarity
-from JointNetDrift import Joint_Prediction
 import torch.optim as optim
 
 from TrainCentroidMatrixNet import FineTunedNet
@@ -12,9 +9,6 @@ from preprocessing import LoadDriftData
 from config import args
 from torch.utils.data import TensorDataset,DataLoader
 from prototypical_batch_sampler import PrototypicalBatchSampler
-from StudentJointNet import Sub_Joint_Prediction
-from SmallJointNet import Small_Prediction
-from TeacherJointNet import Teacher_Joint_Prediction
 import json
 import os
 from torcheval.metrics.functional import multiclass_confusion_matrix
