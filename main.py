@@ -25,7 +25,11 @@ DTYPE_MAP = {
 }
 
 def init_dataset():
+    #--------------------------------------------------------------------------------
     # Reading the data
+    # loads the data, shuffles it, and splits it into train, fine-tune, and test sets. 
+    # It preprocesses the data to handle NaN and infinite values.
+    #--------------------------------------------------------------------------------
     print('Reading the train data')
     all_data_frame = LoadDriftData(args.Data_Vector_Length, args.DATA_FILE,args.DATA_SAMPLE_NUM)
     Drift_data_array = all_data_frame.values
@@ -69,6 +73,10 @@ def init_lr_scheduler(optim):
 
 
 def init_sampler(labels):
+    #----------------------------------------------------------------------------------------------
+    # Initializes a batch sampler for each data split using a prototypical batch sampling technique. 
+    # This is a key component for few-shot learning tasks.
+    #-----------------------------------------------------------------------------------------------
     classes_per_it = args.Nc
     num_samples = args.Ns + args.Nq
 
@@ -79,6 +87,10 @@ def init_sampler(labels):
 
 
 def init_dataloader():
+    #----------------------------------------------
+    # initializes data loaders for train, test, 
+    # and fine-tune sets using PyTorch's DataLoader.
+    #----------------------------------------------
     print("Init dataset")
     train_x,train_y,train_locy,test_x,test_y,test_locy, finetune_x, finetune_y,finetune_locy = init_dataset()
     sampler = init_sampler(train_y)
@@ -123,7 +135,12 @@ splitted_test_set = split_drift_type(test_dataloader)
 
 
 def pretrain():
-
+    #---------------------------------------------------------------------------------------
+    #initializes and trains a model for the drift detection task. 
+    #It uses an embedding network (EmbeddingNet) and Prototypical Network (PrototypicalNet). 
+    #Training is done using PyTorch's optimizer with a learning rate scheduler.
+    #---------------------------------------------------------------------------------------
+    
     ModelSelect = args.FAN # 'RNN', 'FAN', 'FNN','FQN','CNN'
     # train_dataloader,test_dataloader=init_dataloader()
     # splitted_test_set = split_drift_type(test_dataloader)
@@ -137,6 +154,10 @@ def pretrain():
     # Initializing prototypical net
     print('Initializing PreTrain net')
     def train():
+        #--------------------------------------------------------------------------
+        # Handles the training loop, computes losses, and updates model parameters.
+        #--------------------------------------------------------------------------
+        
         model = EmbeddingNet(use_gpu=use_gpu, Data_Vector_Length =args.Data_Vector_Length, ModelSelect=ModelSelect)
         # optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.5)
         optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -144,7 +165,6 @@ def pretrain():
         # loss_fn = torch.nn.CrossEntropyLoss()
         train_loss = []
         train_class_acc = []
-
 
         centroid_matrix=torch.Tensor()
         # Training loop
@@ -184,7 +204,10 @@ def pretrain():
 
     # train()
 
-    # Test loop
+    # ---Test loop----
+    #The trained model is then evaluated on the test set. 
+    # Predictions are made, and the confusion matrix and average accuracy are computed and saved.
+    
     centroid_matrix = torch.load(
         './input/Model/' + args.DATA_FILE + '/{name}_centroid_matrix.pt'.format(name=ModelSelect))
     model = EmbeddingNet(use_gpu=use_gpu, Data_Vector_Length=args.Data_Vector_Length,
@@ -210,6 +233,7 @@ def pretrain():
     # print(time2 - time1)
     avg_class_acc = np.mean(test_class_acc)
     # avg_loc_acc = np.mean(test_loc_acc)
+    
     # save result
     CM = CM.type(dtype=torch.int)
     print(f'Confusion Matrix Pretrain:\n {CM}')
@@ -220,6 +244,12 @@ def pretrain():
         avg_class_acc, ""))
 
 def finetunning():
+    #---------------------------------------------------------------------------------
+    # fine-tunes the pre-trained model on a separate fine-tuning dataset. 
+    # This is done similarly to the pretraining step, with a different set of data and 
+    # potentially different hyperparameters
+    #---------------------------------------------------------------------------------
+    
     ModelSelect = args.FAN  # 'RNN', 'FAN','CNN', 'FNN','FQN','FAN'
     # train_dataloader, test_dataloader = init_dataloader()
     # splitted_test_set = split_drift_type(test_dataloader)
