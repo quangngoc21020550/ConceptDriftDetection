@@ -119,7 +119,7 @@ def split_drift_type(dataloader: DataLoader):
     return list(data_dict.values())
 
 train_dataloader, test_dataloader, finetune_dataloader = init_dataloader()
-splitted_test_set = split_drift_type(test_dataloader)
+# splitted_test_set = split_drift_type(test_dataloader)
 
 
 def pretrain():
@@ -237,7 +237,9 @@ def finetunning():
     teacher_model.load_state_dict(torch.load(PATH))
     centroid_matrix = torch.load('./input/Model/' + args.DATA_FILE + '/{name}_centroid_matrix.pt'.format(name=ModelSelect))
     embedding_model = teacher_model.PrototypicalNet
-    finetuning_model = FineTunedNet(centroid_matrix=centroid_matrix)
+    default_centroid = torch.div(centroid_matrix,torch.max(torch.norm(centroid_matrix, dim=1).reshape(4, 1), torch.zeros(4,1) + torch.tensor(1e-5)))
+    torch.autograd.set_detect_anomaly(True)
+    finetuning_model = FineTunedNet(centroid_matrix=default_centroid)
     # Initializing prototypical net
     def train():
         print('Initializing Finetunning net')
@@ -257,9 +259,11 @@ def finetunning():
         for i in range(num_episode):
             finetuning_model.train()
             for batch_idx, data in enumerate(finetune_dataloader):
+                # torch.autograd.set_detect_anomaly(True)
                 optimizer.zero_grad()
                 datax, datay, locy = data
                 embedded_x = embedding_model(datax)
+                embedded_x = torch.div(embedded_x, torch.max(torch.norm(embedded_x, dim=1).reshape(40,1), torch.zeros(40,1) + torch.tensor(1e-5)))
                 y_pred = finetuning_model(embedded_x)
                 loss = loss_fn(y_pred, datay)
                 pred_labels = torch.argmax(y_pred, dim=1)

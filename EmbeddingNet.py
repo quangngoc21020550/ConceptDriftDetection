@@ -348,7 +348,11 @@ def euclidean_dist(x, y):
     return torch.pow(x - y, 2).sum(2)
 
 def cosine_similarity(x, y):
-    return torch.mm(x, torch.t(y))
+    n_class = list(x.size())[0]
+    batch_size = list(y.size())[0]
+    non_dir = torch.mm(x, torch.t(y))
+    length = torch.mm(torch.norm(x, dim=1).reshape(n_class,1), torch.t(torch.norm(y, dim=1).reshape(batch_size,1)))
+    return torch.div(non_dir, length)
 
 class DriftPointNet1(nn.Module):
     def __init__(self, use_gpu=True,Data_Vector_Length=100):
