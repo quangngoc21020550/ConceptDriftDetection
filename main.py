@@ -26,8 +26,7 @@ DTYPE_MAP = {
 
 def init_dataset():
     #--------------------------------------------------------------------------------
-    # Reading the data
-    # loads the data, shuffles it, and splits it into train, fine-tune, and test sets. 
+    # Loads the data, shuffles it, and splits it into train, fine-tune, and test sets. 
     # It preprocesses the data to handle NaN and infinite values.
     #--------------------------------------------------------------------------------
     print('Reading the train data')
@@ -136,7 +135,7 @@ splitted_test_set = split_drift_type(test_dataloader)
 
 def pretrain():
     #---------------------------------------------------------------------------------------
-    #initializes and trains a model for the drift detection task. 
+    #Initializes and trains a model for the drift detection task. 
     #It uses an embedding network (EmbeddingNet) and Prototypical Network (PrototypicalNet). 
     #Training is done using PyTorch's optimizer with a learning rate scheduler.
     #---------------------------------------------------------------------------------------
@@ -264,6 +263,8 @@ def finetunning():
     teacher_model = EmbeddingNet(use_gpu=use_gpu, Data_Vector_Length=args.Data_Vector_Length,
                                              ModelSelect=ModelSelect)
     PATH = BASE_PATH + '/' + ModelSelect + '_model_embeding.pkl'
+    #The teacher model (presumably pre-trained) and the centroid matrix are loaded. 
+    #The teacher model is an instance of EmbeddingNet initialized with specific parameters, and its state dictionary is loaded from a file.
     teacher_model.load_state_dict(torch.load(PATH))
     centroid_matrix = torch.load('./input/Model/' + args.DATA_FILE + '/{name}_centroid_matrix.pt'.format(name=ModelSelect))
     embedding_model = teacher_model.PrototypicalNet
